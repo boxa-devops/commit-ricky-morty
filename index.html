@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Callbacks & Promises Quiz</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .quiz-container { background: white; padding: 20px 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 600px; width: 100%; }
+        h2 { text-align: center; color: #333; margin-bottom: 20px; }
+        .question { font-size: 1.2em; margin-bottom: 15px; font-weight: 600; color: #2c3e50; }
+        .options { list-style: none; padding: 0; }
+        .options li { margin: 10px 0; }
+        .btn { width: 100%; padding: 12px; border: 2px solid #ddd; background: #fff; border-radius: 5px; cursor: pointer; text-align: left; font-size: 1em; transition: 0.3s; }
+        .btn:hover { background: #f0f0f0; border-color: #bbb; }
+        .btn.correct { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .btn.wrong { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .controls { display: flex; justify-content: space-between; margin-top: 20px; }
+        .action-btn { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
+        .action-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        .score-box { text-align: center; font-size: 1.1em; margin-top: 15px; color: #555; }
+        .result-screen { text-align: center; display: none; }
+        .hide { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="quiz-screen">
+        <div class="score-box">Savol: <span id="current-q">1</span> / 30</div>
+        <div class="question" id="question-text">Savol yuklanmoqda...</div>
+        <ul class="options" id="options-list"></ul>
+        <div class="controls">
+            <button class="action-btn" id="next-btn" onclick="nextQuestion()" disabled>Keyingi</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="result-screen">
+        <h2>Test Yakunlandi!</h2>
+        <p style="font-size: 1.5em;">Sizning natijangiz: <span id="score">0</span> / 30</p>
+        <p id="feedback-text"></p>
+        <button class="action-btn" onclick="location.reload()">Qayta ishlash</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "Callback nima?", a: 1, opts: ["Sinxron funksiyalarni tez ishlatish usuli", "Boshqa funksiyaga argument sifatida beriladigan funksiya", "DOM boshqarish funksiyasi", "Promise bajarilishidan keyingi holat"] },
+        { q: "Callback hell qachon yuzaga keladi?", a: 1, opts: ["Kod juda tez ishlaganda", "Juda ko‘p ketma-ket callback’lar ishlatilganda", "DOM eventlari ishlamay qolganda", "Server porti noto‘g‘ri bo‘lsa"] },
+        { q: "setTimeout(() => console.log('Hello'), 1000); nima qiladi?", a: 1, opts: ["Darhol “Hello” chiqaradi", "1 soniyadan keyin “Hello” chiqaradi", "Error beradi", "Hech narsa qilmaydi"] },
+        { q: "Promise holatlari nechta?", a: 2, opts: ["1ta", "2ta", "3ta", "4ta"] },
+        { q: "Promise’da 'pending' nimani anglatadi?", a: 2, opts: ["Xato yuz bergan", "Yakunlangan", "Hali bajarilmagan/bajarilmoqda", "Tozalangan"] },
+        { q: "resolve() nima qiladi?", a: 1, opts: ["Promise'ni xatoga tushiradi", "Promise'ni bajarilgan holatga o‘tkazadi", "Promise'ni bloklaydi", "Funksiyani takrorlaydi"] },
+        { q: "Promise yozilishi to‘g‘ri variant qaysi?", a: 0, opts: ["new Promise(function(resolve, reject) {})", "Promise(function(resolve) {})", "Promise.create(resolve, reject)", "Promise.make()"] },
+        { q: "Promise natijasini olish uchun nima ishlatiladi?", a: 1, opts: ["wait", "then", "after", "next"] },
+        { q: "catch() ning vazifasi nima?", a: 1, opts: ["Promise bajarilishini to‘xtatadi", "Xatolarni ushlaydi", "Natija qaytaradi", "Kodni tezlashtiradi"] },
+        { q: "Promise.resolve(5).then(x => console.log(x)); natijasi?", a: 2, opts: ["Hech narsa chiqmaydi", "Error", "5", "undefined"] },
+        { q: "Qaysi biri callback hell’ni keltirib chiqaradi?", a: 2, opts: ["promise.then(fn)", "fetch()", "Nested setTimeout calls", "console.log('hi')"] },
+        { q: "Promise’da “rejected” holati nimani anglatadi?", a: 2, opts: ["Bajarildi", "Kutilmoqda", "Xatolik yuz berdi", "Hech narsa qilinmadi"] },
+        { q: "console.log(1); setTimeout(() => console.log(2), 0); Qaysi biri birinchi?", a: 0, opts: ["1 → 2", "2 → 1", "Ikki marta 1", "Xato"] },
+        { q: "finally() nima qiladi?", a: 2, opts: ["Faqat xato bo‘lganda ishlaydi", "Faqat resolve bo‘lganda ishlaydi", "Har doim ishlaydi", "Promise'ni bloklaydi"] },
+        { q: "new Promise((res, rej) => rej('xato')).catch(msg => console.log(msg)); natijasi?", a: 2, opts: ["undefined", "hech narsa chiqmaydi", "xato", "Error"] },
+        { q: "Promise.all() qachon rejected holatga o‘tadi?", a: 1, opts: ["Barcha promises bajarilganda", "Birortasi rejected bo‘lsa", "Birinchisi bajarilganda", "Ikkalasi bajarilganda"] },
+        { q: "Callback qaysi turdagi texnikaga tegishli?", a: 1, opts: ["Synchronous programming", "Asynchronous programming", "Compiler optimization", "CSS engine"] },
+        { q: "Quyidagi qaysi biri Promise yaratmaydi?", a: 1, opts: ["fetch()", "setTimeout()", "Promise.resolve()", "axios.get()"] },
+        { q: "Promise.race() nima qiladi?", a: 0, opts: ["Eng tez bajarilgan Promise natijasini qaytaradi", "Eng oxirgi Promise natijasini qaytaradi", "Barchasini parallel bajaradi", "Xatolarni yuvadi"] },
+        { q: "Callback’lar qayerda keng ishlatiladi?", a: 1, opts: ["CSS", "Browser events (click, input)", "HTML loader", "JSON parser"] },
+        { q: "Asinxron callback misoli qaysi?", a: 1, opts: ["function sum(a, b)", "document.addEventListener('click', fn)", "console.log('hi')", "Math.random()"] },
+        { q: "Promise.resolve().then(() => 1).then(x => x + 1).then(console.log); Natija?", a: 1, opts: ["1", "2", "undefined", "Error"] },
+        { q: "Callback hell qaysi muammoni keltirib chiqaradi?", a: 1, opts: ["Kodni sekinlashtiradi", "Kodni o‘qishni qiyinlashtiradi", "Browserni o‘chiradi", "DOMni yangilamaydi"] },
+        { q: "Promise’da error’larni ushlashning eng yaxshi usuli?", a: 1, opts: ["then ichida if", "catch", "alert", "try/catch"] },
+        { q: "Qaysi kod xato beradi?", a: 1, opts: ["Promise.reject('xato')", "Promise().then()", "Promise.resolve(5)", "new Promise(()=>{})"] },
+        { q: "Promise chaining nima?", a: 1, opts: ["Bir nechta callback qo‘shish", "Promise ustiga promise ulash (ketma-ket then)", "DOM nodesni bog‘lash", "Ob'ektlarni klonlash"] },
+        { q: "new Promise(res => res(10)).then(x => { console.log(x * 2); }); Natija?", a: 2, opts: ["10", "5", "20", "undefined"] },
+        { q: "Promise qachon asynchronous bo‘ladi?", a: 0, opts: ["Har doim", "Faqat reject bo‘lganda", "Faqat fetch bilan", "Faqat setTimeout bilan"] },
+        { q: "Callback hellni qanday yechish mumkin?", a: 2, opts: ["Kodni o‘chirish", "HTML yozish", "Promises yoki async/await ishlatish", "CSS optimizatsiya qilish"] },
+        { q: "Qaysi birinchi ishlaydi: setTimeout(...,0) vs Promise.resolve()?", a: 1, opts: ["timeout", "promise", "ikkalasi bir vaqtda", "hech biri"] }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    const qText = document.getElementById("question-text");
+    const optList = document.getElementById("options-list");
+    const nextBtn = document.getElementById("next-btn");
+    const currentQSpan = document.getElementById("current-q");
+
+    function loadQuestion() {
+        const q = questions[currentQuestion];
+        qText.innerText = (currentQuestion + 1) + ". " + q.q;
+        currentQSpan.innerText = currentQuestion + 1;
+        optList.innerHTML = "";
+        nextBtn.disabled = true;
+
+        q.opts.forEach((opt, index) => {
+            const li = document.createElement("li");
+            const btn = document.createElement("button");
+            btn.className = "btn";
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(index, btn);
+            li.appendChild(btn);
+            optList.appendChild(li);
+        });
+    }
+
+    function checkAnswer(selectedIndex, btn) {
+        const correctIndex = questions[currentQuestion].a;
+        const buttons = optList.querySelectorAll(".btn");
+        
+        buttons.forEach(b => b.disabled = true); // Disable all buttons
+
+        if(selectedIndex === correctIndex) {
+            btn.classList.add("correct");
+            score++;
+        } else {
+            btn.classList.add("wrong");
+            buttons[correctIndex].classList.add("correct"); // Show correct answer
+        }
+        nextBtn.disabled = false;
+    }
+
+    function nextQuestion() {
+        currentQuestion++;
+        if (currentQuestion < questions.length) {
+            loadQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        document.getElementById("quiz-screen").classList.add("hide");
+        document.getElementById("result-screen").style.display = "block";
+        document.getElementById("score").innerText = score;
+        
+        const feedback = document.getElementById("feedback-text");
+        if(score === 30) feedback.innerText = "Mukammal! Siz JS ustasisiz! 🚀";
+        else if(score > 20) feedback.innerText = "Juda yaxshi natija! 🔥";
+        else feedback.innerText = "Yaxshi, lekin yana o‘rganish kerak. 📚";
+    }
+
+    // Start
+    loadQuestion();
+</script>
+
+</body>
+</html>
